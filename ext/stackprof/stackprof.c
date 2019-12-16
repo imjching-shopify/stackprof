@@ -67,6 +67,7 @@ static struct {
 
     VALUE fake_frame_names[TOTAL_FAKE_FRAMES];
     VALUE empty_string;
+    VALUE empty_hash;
     VALUE frames_buffer[BUF_SIZE];
     int lines_buffer[BUF_SIZE];
 } _stackprof;
@@ -87,7 +88,7 @@ stackprof_start(int argc, VALUE *argv, VALUE self)
 {
     struct sigaction sa;
     struct itimerval timer;
-    VALUE opts = Qnil, mode = Qnil, interval = Qnil, metadata = rb_hash_new(), out = Qfalse;
+    VALUE opts = Qnil, mode = Qnil, interval = Qnil, metadata = _stackprof.empty_hash, out = Qfalse;
     int raw = 0, aggregate = 1;
 
     if (_stackprof.running)
@@ -283,6 +284,8 @@ stackprof_results(int argc, VALUE *argv, VALUE self)
     rb_hash_aset(results, sym_gc_samples, SIZET2NUM(_stackprof.during_gc));
     rb_hash_aset(results, sym_missed_samples, SIZET2NUM(_stackprof.overall_signals - _stackprof.overall_samples));
     rb_hash_aset(results, sym_metadata, _stackprof.metadata);
+
+    _stackprof.metadata = Qnil;
 
     frames = rb_hash_new();
     rb_hash_aset(results, sym_frames, frames);
@@ -741,6 +744,9 @@ Init_stackprof(void)
 
     _stackprof.empty_string = rb_str_new_cstr("");
     rb_global_variable(&_stackprof.empty_string);
+
+    _stackprof.empty_hash = rb_hash_new();
+    rb_global_variable(&_stackprof.empty_hash);
 
     for (i = 0; i < TOTAL_FAKE_FRAMES; i++) {
 	    _stackprof.fake_frame_names[i] = rb_str_new_cstr(fake_frame_cstrs[i]);
